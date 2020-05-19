@@ -8,8 +8,10 @@ public class AESKeyGenerator {
 
     private static final int AES_KEY_SIZE = 256;
 
+    private static final String KEY_STORE_PATH = "/Users/a0u007a/Desktop/MyProjects/";
+
     public static SecretKey getAESKey() {
-        File file = new File("secretketstore.txt");
+        File file = new File(KEY_STORE_PATH+"secretketstore.txt");
         SecretKey aesKey = null;
 
         try (FileInputStream fileInputStream = new FileInputStream(file);
@@ -25,7 +27,7 @@ public class AESKeyGenerator {
     public static SecretKey generateAESKey() {
 
         SecretKey aesKey = null;
-        File file = new File("secretketstore.txt");
+        File file = new File(KEY_STORE_PATH+"secretketstore.txt");
 
         try (FileOutputStream fileOutputStream = new FileOutputStream(file);
              ObjectOutputStream outputStream = new ObjectOutputStream(fileOutputStream)) {
