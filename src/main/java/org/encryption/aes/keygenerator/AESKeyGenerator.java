@@ -13,10 +13,11 @@ public class AESKeyGenerator {
     public static SecretKey getAESKey() {
         File file = new File(KEY_STORE_PATH+"secretketstore.txt");
         SecretKey aesKey = null;
-
+        //SecretKey aesKey2 = null;
         try (FileInputStream fileInputStream = new FileInputStream(file);
              ObjectInputStream inputStream = new ObjectInputStream(fileInputStream)) {
             aesKey = (SecretKey) inputStream.readObject();
+            //aesKey2 = (SecretKey) inputStream.readObject();
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -36,6 +37,11 @@ public class AESKeyGenerator {
             keygen.init(AES_KEY_SIZE);
             aesKey = keygen.generateKey();
             outputStream.writeObject(aesKey);
+
+            //Generate Second Key
+            //aesKey = keygen.generateKey();
+            //outputStream.writeObject(aesKey);
+
         } catch (Exception ex) {
             ex.printStackTrace();
         }
