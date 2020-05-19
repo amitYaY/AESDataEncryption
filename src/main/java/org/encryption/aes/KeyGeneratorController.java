@@ -13,6 +13,11 @@ public class KeyGeneratorController {
 
     @RequestMapping(value = "/secretkey", method = RequestMethod.GET)
     public SecretKey getSecretKey() {
+        return AESKeyGenerator.getAESKey();
+    }
+
+    @RequestMapping(value = "/new/secretkey", method = RequestMethod.POST)
+    public SecretKey generateSecretKey() {
         return AESKeyGenerator.generateAESKey();
     }
 
