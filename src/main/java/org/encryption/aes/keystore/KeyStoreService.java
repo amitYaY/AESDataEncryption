@@ -19,7 +19,7 @@ public class KeyStoreService {
 
     public KeyStore setUpKeyStore(String aliasName, SecretKey secretKey) throws KeyStoreException, IOException, CertificateException, NoSuchAlgorithmException {
 
-        KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+        KeyStore keyStore = KeyStore.getInstance("JCEKS");
 
         char[] keyStorePassword = "123abc".toCharArray();
         try {
@@ -35,7 +35,7 @@ public class KeyStoreService {
 
         keyStore.setEntry(aliasName, secretKeyEntry, entryPassword);
 
-        try (FileOutputStream keyStoreOutputStream = new FileOutputStream(KEY_STORE_PATH+"keystore.jks")) {
+        try (FileOutputStream keyStoreOutputStream = new FileOutputStream(KEY_STORE_PATH+"keystore.jceks")) {
             keyStore.store(keyStoreOutputStream, keyStorePassword);
         }
 
