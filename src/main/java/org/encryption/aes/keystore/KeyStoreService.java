@@ -8,12 +8,24 @@ import java.io.*;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.util.Enumeration;
 
 @Component
 public class KeyStoreService {
 
     private static final String KEY_STORE_PATH = "/Users/a0u007a/Desktop/MyProjects/";
+
+    private static final String ACTIVE_KEY_ALISA_PREFIX = "ACTIVE";
+
+    private static final String BACKUP_KEY_ALISA_PREFIX = "BACKUP";
+
+    private static final String ENCRYPTION_KEY_DELIMITER = "#TIMESTAMP#";
 
     @PostConstruct
     public void setUpKeyStore() throws KeyStoreException {
@@ -33,6 +45,7 @@ public class KeyStoreService {
         }
     }
 
+    // Strategy #1
     public KeyStore storeKeyInKeyStore(String aliasName, SecretKey secretKey) throws KeyStoreException, IOException, CertificateException, NoSuchAlgorithmException {
 
         KeyStore keyStore = KeyStore.getInstance("JCEKS");
@@ -56,6 +69,90 @@ public class KeyStoreService {
         }
 
         return keyStore;
+    }
+
+    // Strategy #2-> Step-1
+    public KeyStore storeNewKeyInKeyStoreWithTimestampSuffix(LocalDateTime keyGenerationTime, SecretKey secretKey) throws KeyStoreException, IOException, CertificateException, NoSuchAlgorithmException {
+
+        // To flush out exiting Keys and Test Strategy #2
+        setUpKeyStore();
+
+        KeyStore keyStore = KeyStore.getInstance("JCEKS");
+
+        char[] keyStorePassword = "123abc".toCharArray();
+        try(FileInputStream keyStoreInputStream = new FileInputStream(KEY_STORE_PATH+"keystore.jceks")) {
+            keyStore.load(keyStoreInputStream, keyStorePassword);
+        } catch (CertificateException | NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+
+        char[] keyEntryPassword = "456def".toCharArray();
+        KeyStore.ProtectionParameter entryPassword = new KeyStore.PasswordProtection(keyEntryPassword);
+
+        KeyStore.SecretKeyEntry secretKeyEntry = new KeyStore.SecretKeyEntry(secretKey);
+
+        keyStore.setEntry(ACTIVE_KEY_ALISA_PREFIX+ENCRYPTION_KEY_DELIMITER+keyGenerationTime.toEpochSecond(ZoneOffset.UTC), secretKeyEntry, entryPassword);
+
+        try (FileOutputStream keyStoreOutputStream = new FileOutputStream(KEY_STORE_PATH+"keystore.jceks")) {
+            keyStore.store(keyStoreOutputStream, keyStorePassword);
+        }
+
+        return keyStore;
+    }
+
+    // Strategy #2-> Step-2
+    public KeyStore rotateKeyInKeyStoreWithTimestampSuffix(LocalDateTime keyGenerationTime, SecretKey newSecretKey) throws KeyStoreException, IOException, CertificateException, NoSuchAlgorithmException, UnrecoverableKeyException {
+
+        // To flush out exiting Keys and Test Strategy #2
+        setUpKeyStore();
+
+        KeyStore keyStore = KeyStore.getInstance("JCEKS");
+
+        char[] keyStorePassword = "123abc".toCharArray();
+        try(FileInputStream keyStoreInputStream = new FileInputStream(KEY_STORE_PATH+"keystore.jceks")) {
+            keyStore.load(keyStoreInputStream, keyStorePassword);
+        } catch (CertificateException | NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+
+        char[] keyPassword = "456def".toCharArray();
+        String aliasName = getActiveKeyAliasName(keyStore);
+        SecretKey backUpSecretKey = (SecretKey) keyStore.getKey(aliasName, keyPassword);
+        String backUpSecretKeyTimestamp = aliasName.split(ENCRYPTION_KEY_DELIMITER)[1];
+        String backUpSecretKeyAliasName = BACKUP_KEY_ALISA_PREFIX+ENCRYPTION_KEY_DELIMITER+backUpSecretKeyTimestamp;
+
+        char[] keyEntryPassword = "456def".toCharArray();
+        KeyStore.ProtectionParameter entryPassword = new KeyStore.PasswordProtection(keyEntryPassword);
+
+        KeyStore.SecretKeyEntry backUpSecretKeyEntry = new KeyStore.SecretKeyEntry(backUpSecretKey);
+        keyStore.setEntry(backUpSecretKeyAliasName, backUpSecretKeyEntry, entryPassword);
+
+        KeyStore.SecretKeyEntry activeSecretKeyEntry = new KeyStore.SecretKeyEntry(newSecretKey);
+        String activeSecretKeyAliasName = ACTIVE_KEY_ALISA_PREFIX+ENCRYPTION_KEY_DELIMITER+keyGenerationTime.toEpochSecond(ZoneOffset.UTC);
+        keyStore.setEntry(activeSecretKeyAliasName, activeSecretKeyEntry, entryPassword);
+
+        try (FileOutputStream keyStoreOutputStream = new FileOutputStream(KEY_STORE_PATH+"keystore.jceks")) {
+            keyStore.store(keyStoreOutputStream, keyStorePassword);
+        }
+
+        return keyStore;
+    }
+
+    private String getActiveKeyAliasName(KeyStore keyStore) throws KeyStoreException {
+
+        String aliasName = null;
+
+        Enumeration<String> aliases = keyStore.aliases();
+
+        while (aliases.hasMoreElements()) {
+            String tempAlias = aliases.nextElement();
+            if (tempAlias.startsWith(ACTIVE_KEY_ALISA_PREFIX)) {
+                aliasName = tempAlias;
+                break;
+            }
+        }
+
+        return aliasName;
     }
 
 }

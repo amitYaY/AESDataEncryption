@@ -7,6 +7,11 @@ import org.springframework.stereotype.Component;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import java.io.*;
+import java.security.KeyStore;
+import java.time.LocalDateTime;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
 
 @Component
 public class AESKeyGenerator {
@@ -33,6 +38,7 @@ public class AESKeyGenerator {
         return aesKey;
     }
 
+    // KeyGeneration Strategy  #1: Create Keys and Key Alias both every time and use the same for identify Decryption Key
     public SecretKey generateAESKey() {
 
         SecretKey aesKey = null;
@@ -60,4 +66,51 @@ public class AESKeyGenerator {
         return aesKey;
     }
 
+    // KeyGeneration Strategy  #2 -> Step-1: Create First Active Key with Key Alias Prefix ACTIVE and add Timestamp while KeyAlias Creation
+    public SecretKey generateAESKeyWithTimestampSuffixAlias() {
+
+        SecretKey aesKey = null;
+        File file = new File(KEY_STORE_PATH + "secretketstore.txt");
+
+        try {
+            // Generating Key
+            KeyGenerator keygen = KeyGenerator.getInstance("AES"); // Key Will be used for AES
+            keygen.init(AES_KEY_SIZE);
+            aesKey = keygen.generateKey();
+            keyStoreService.storeNewKeyInKeyStoreWithTimestampSuffix(LocalDateTime.now(), aesKey);
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return aesKey;
+    }
+
+    // KeyGeneration Strategy  #2 -> Step-2: Rotate Active Key. Now current Active will become Backup key
+    public Map<String, SecretKey> rotateKeyInKeyStoreWithTimestampSuffix() {
+
+        Map<String, SecretKey> secretKeyMap = new HashMap<>();
+
+        SecretKey aesKey = null;
+        File file = new File(KEY_STORE_PATH + "secretketstore.txt");
+
+        try {
+            // Generating Key
+            KeyGenerator keygen = KeyGenerator.getInstance("AES"); // Key Will be used for AES
+            keygen.init(AES_KEY_SIZE);
+            aesKey = keygen.generateKey();
+            KeyStore keyStore = keyStoreService.rotateKeyInKeyStoreWithTimestampSuffix(LocalDateTime.now(), aesKey);
+
+            Enumeration<String> aliases = keyStore.aliases();
+
+            while (aliases.hasMoreElements()) {
+                String alias = aliases.nextElement();
+                char[] keyPassword = "456def".toCharArray();
+                secretKeyMap.put(alias, (SecretKey) keyStore.getKey(alias, keyPassword));
+            }
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return secretKeyMap;
+    }
 }
