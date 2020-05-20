@@ -70,8 +70,6 @@ public class AESKeyGenerator {
     public SecretKey generateAESKeyWithTimestampSuffixAlias() {
 
         SecretKey aesKey = null;
-        File file = new File(KEY_STORE_PATH + "secretketstore.txt");
-
         try {
             // Generating Key
             KeyGenerator keygen = KeyGenerator.getInstance("AES"); // Key Will be used for AES
@@ -90,14 +88,11 @@ public class AESKeyGenerator {
 
         Map<String, SecretKey> secretKeyMap = new HashMap<>();
 
-        SecretKey aesKey = null;
-        File file = new File(KEY_STORE_PATH + "secretketstore.txt");
-
         try {
             // Generating Key
             KeyGenerator keygen = KeyGenerator.getInstance("AES"); // Key Will be used for AES
             keygen.init(AES_KEY_SIZE);
-            aesKey = keygen.generateKey();
+            SecretKey aesKey = keygen.generateKey();
             KeyStore keyStore = keyStoreService.rotateKeyInKeyStoreWithTimestampSuffix(LocalDateTime.now(), aesKey);
 
             Enumeration<String> aliases = keyStore.aliases();

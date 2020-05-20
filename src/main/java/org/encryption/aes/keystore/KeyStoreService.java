@@ -21,11 +21,11 @@ public class KeyStoreService {
 
     private static final String KEY_STORE_PATH = "/Users/a0u007a/Desktop/MyProjects/";
 
-    private static final String ACTIVE_KEY_ALISA_PREFIX = "ACTIVE";
+    private static final String ACTIVE_KEY_ALISA_PREFIX = "active";
 
-    private static final String BACKUP_KEY_ALISA_PREFIX = "BACKUP";
+    private static final String BACKUP_KEY_ALISA_PREFIX = "backup";
 
-    private static final String ENCRYPTION_KEY_DELIMITER = "#TIMESTAMP#";
+    private static final String ENCRYPTION_KEY_DELIMITER = "#timestamp#";
 
     @PostConstruct
     public void setUpKeyStore() throws KeyStoreException {
@@ -39,6 +39,24 @@ public class KeyStoreService {
         }
 
         try (FileOutputStream keyStoreOutputStream = new FileOutputStream(KEY_STORE_PATH+"keystore.jceks")) {
+            keyStore.store(keyStoreOutputStream, keyStorePassword);
+        } catch (IOException | NoSuchAlgorithmException | CertificateException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @PostConstruct
+    public void setUpKeyStoreForStrategyWithSuffix() throws KeyStoreException {
+        KeyStore keyStore = KeyStore.getInstance("JCEKS");
+
+        char[] keyStorePassword = "123abc".toCharArray();
+        try {
+            keyStore.load(null, keyStorePassword);
+        } catch (CertificateException | NoSuchAlgorithmException | IOException e) {
+            e.printStackTrace();
+        }
+
+        try (FileOutputStream keyStoreOutputStream = new FileOutputStream(KEY_STORE_PATH+"keystoreWithPrefixAlias.jceks")) {
             keyStore.store(keyStoreOutputStream, keyStorePassword);
         } catch (IOException | NoSuchAlgorithmException | CertificateException e) {
             e.printStackTrace();
@@ -74,13 +92,10 @@ public class KeyStoreService {
     // Strategy #2-> Step-1
     public KeyStore storeNewKeyInKeyStoreWithTimestampSuffix(LocalDateTime keyGenerationTime, SecretKey secretKey) throws KeyStoreException, IOException, CertificateException, NoSuchAlgorithmException {
 
-        // To flush out exiting Keys and Test Strategy #2
-        setUpKeyStore();
-
         KeyStore keyStore = KeyStore.getInstance("JCEKS");
 
         char[] keyStorePassword = "123abc".toCharArray();
-        try(FileInputStream keyStoreInputStream = new FileInputStream(KEY_STORE_PATH+"keystore.jceks")) {
+        try(FileInputStream keyStoreInputStream = new FileInputStream(KEY_STORE_PATH+"keystoreWithPrefixAlias.jceks")) {
             keyStore.load(keyStoreInputStream, keyStorePassword);
         } catch (CertificateException | NoSuchAlgorithmException e) {
             e.printStackTrace();
@@ -93,7 +108,7 @@ public class KeyStoreService {
 
         keyStore.setEntry(ACTIVE_KEY_ALISA_PREFIX+ENCRYPTION_KEY_DELIMITER+keyGenerationTime.toEpochSecond(ZoneOffset.UTC), secretKeyEntry, entryPassword);
 
-        try (FileOutputStream keyStoreOutputStream = new FileOutputStream(KEY_STORE_PATH+"keystore.jceks")) {
+        try (FileOutputStream keyStoreOutputStream = new FileOutputStream(KEY_STORE_PATH+"keystoreWithPrefixAlias.jceks")) {
             keyStore.store(keyStoreOutputStream, keyStorePassword);
         }
 
@@ -103,19 +118,20 @@ public class KeyStoreService {
     // Strategy #2-> Step-2
     public KeyStore rotateKeyInKeyStoreWithTimestampSuffix(LocalDateTime keyGenerationTime, SecretKey newSecretKey) throws KeyStoreException, IOException, CertificateException, NoSuchAlgorithmException, UnrecoverableKeyException {
 
-        // To flush out exiting Keys and Test Strategy #2
-        setUpKeyStore();
-
         KeyStore keyStore = KeyStore.getInstance("JCEKS");
 
         char[] keyStorePassword = "123abc".toCharArray();
-        try(FileInputStream keyStoreInputStream = new FileInputStream(KEY_STORE_PATH+"keystore.jceks")) {
+        try(FileInputStream keyStoreInputStream = new FileInputStream(KEY_STORE_PATH+"keystoreWithPrefixAlias.jceks")) {
             keyStore.load(keyStoreInputStream, keyStorePassword);
         } catch (CertificateException | NoSuchAlgorithmException e) {
             e.printStackTrace();
         }
 
         char[] keyPassword = "456def".toCharArray();
+        String backupAliasName = getBackupKeyAliasName(keyStore);
+        if(backupAliasName != null) {
+            keyStore.deleteEntry(backupAliasName);
+        }
         String aliasName = getActiveKeyAliasName(keyStore);
         SecretKey backUpSecretKey = (SecretKey) keyStore.getKey(aliasName, keyPassword);
         String backUpSecretKeyTimestamp = aliasName.split(ENCRYPTION_KEY_DELIMITER)[1];
@@ -131,7 +147,9 @@ public class KeyStoreService {
         String activeSecretKeyAliasName = ACTIVE_KEY_ALISA_PREFIX+ENCRYPTION_KEY_DELIMITER+keyGenerationTime.toEpochSecond(ZoneOffset.UTC);
         keyStore.setEntry(activeSecretKeyAliasName, activeSecretKeyEntry, entryPassword);
 
-        try (FileOutputStream keyStoreOutputStream = new FileOutputStream(KEY_STORE_PATH+"keystore.jceks")) {
+        keyStore.deleteEntry(aliasName);
+
+        try (FileOutputStream keyStoreOutputStream = new FileOutputStream(KEY_STORE_PATH+"keystoreWithPrefixAlias.jceks")) {
             keyStore.store(keyStoreOutputStream, keyStorePassword);
         }
 
@@ -141,9 +159,7 @@ public class KeyStoreService {
     private String getActiveKeyAliasName(KeyStore keyStore) throws KeyStoreException {
 
         String aliasName = null;
-
         Enumeration<String> aliases = keyStore.aliases();
-
         while (aliases.hasMoreElements()) {
             String tempAlias = aliases.nextElement();
             if (tempAlias.startsWith(ACTIVE_KEY_ALISA_PREFIX)) {
@@ -151,7 +167,20 @@ public class KeyStoreService {
                 break;
             }
         }
+        return aliasName;
+    }
 
+    private String getBackupKeyAliasName(KeyStore keyStore) throws KeyStoreException {
+
+        String aliasName = null;
+        Enumeration<String> aliases = keyStore.aliases();
+        while (aliases.hasMoreElements()) {
+            String tempAlias = aliases.nextElement();
+            if (tempAlias.startsWith(BACKUP_KEY_ALISA_PREFIX)) {
+                aliasName = tempAlias;
+                break;
+            }
+        }
         return aliasName;
     }
 
