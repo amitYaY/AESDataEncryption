@@ -46,13 +46,13 @@ public class AESKeyGenerator {
             aesKey = keygen.generateKey();
             outputStream.writeObject(aesKey);
 
-            keyStoreService.setUpKeyStore("Key1", aesKey);
+            keyStoreService.storeKeyInKeyStore("Key1", aesKey);
 
             //Generate Second Key
             aesKey = keygen.generateKey();
             outputStream.writeObject(aesKey);
 
-            keyStoreService.setUpKeyStore("Key2", aesKey);
+            keyStoreService.storeKeyInKeyStore("Key2", aesKey);
 
         } catch (Exception ex) {
             ex.printStackTrace();
