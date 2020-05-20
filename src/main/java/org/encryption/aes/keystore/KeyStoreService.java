@@ -15,6 +15,8 @@ import java.security.cert.CertificateException;
 @Component
 public class KeyStoreService {
 
+    private static final String KEY_STORE_PATH = "/Users/a0u007a/Desktop/MyProjects/";
+
     public KeyStore setUpKeyStore(String aliasName, SecretKey secretKey) throws KeyStoreException, IOException, CertificateException, NoSuchAlgorithmException {
 
         KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
@@ -33,9 +35,10 @@ public class KeyStoreService {
 
         keyStore.setEntry(aliasName, secretKeyEntry, entryPassword);
 
-        try (FileOutputStream keyStoreOutputStream = new FileOutputStream("keystore/keystore.jks")) {
+        try (FileOutputStream keyStoreOutputStream = new FileOutputStream(KEY_STORE_PATH+"keystore.jks")) {
             keyStore.store(keyStoreOutputStream, keyStorePassword);
         }
+
         return keyStore;
     }
 
