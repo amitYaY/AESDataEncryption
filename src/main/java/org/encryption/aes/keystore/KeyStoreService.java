@@ -67,25 +67,21 @@ public class KeyStoreService {
     public KeyStore storeKeyInKeyStore(String aliasName, SecretKey secretKey) throws KeyStoreException, IOException, CertificateException, NoSuchAlgorithmException {
 
         KeyStore keyStore = KeyStore.getInstance("JCEKS");
-
-        char[] keyStorePassword = "123abc".toCharArray();
-        try(FileInputStream keyStoreInputStream = new FileInputStream(KEY_STORE_PATH+"keystore.jceks")) {
+        char[] keyStorePassword = "storePass".toCharArray();
+        try (FileInputStream keyStoreInputStream = new FileInputStream(KEY_STORE_PATH + "keystore.jceks")) {
             keyStore.load(keyStoreInputStream, keyStorePassword);
         } catch (CertificateException | NoSuchAlgorithmException e) {
             e.printStackTrace();
         }
 
-        char[] keyEntryPassword = "456def".toCharArray();
+        char[] keyEntryPassword = "keyPass".toCharArray();
         KeyStore.ProtectionParameter entryPassword = new KeyStore.PasswordProtection(keyEntryPassword);
-
         KeyStore.SecretKeyEntry secretKeyEntry = new KeyStore.SecretKeyEntry(secretKey);
-
         keyStore.setEntry(aliasName, secretKeyEntry, entryPassword);
 
-        try (FileOutputStream keyStoreOutputStream = new FileOutputStream(KEY_STORE_PATH+"keystore.jceks")) {
+        try (FileOutputStream keyStoreOutputStream = new FileOutputStream(KEY_STORE_PATH + "keystore.jceks")) {
             keyStore.store(keyStoreOutputStream, keyStorePassword);
         }
-
         return keyStore;
     }
 
@@ -93,25 +89,20 @@ public class KeyStoreService {
     public KeyStore storeNewKeyInKeyStoreWithTimestampSuffix(LocalDateTime keyGenerationTime, SecretKey secretKey) throws KeyStoreException, IOException, CertificateException, NoSuchAlgorithmException {
 
         KeyStore keyStore = KeyStore.getInstance("JCEKS");
-
-        char[] keyStorePassword = "123abc".toCharArray();
-        try(FileInputStream keyStoreInputStream = new FileInputStream(KEY_STORE_PATH+"keystoreWithPrefixAlias.jceks")) {
+        char[] keyStorePassword = "storePass".toCharArray();
+        try (FileInputStream keyStoreInputStream = new FileInputStream(KEY_STORE_PATH + "keystoreWithPrefixAlias.jceks")) {
             keyStore.load(keyStoreInputStream, keyStorePassword);
         } catch (CertificateException | NoSuchAlgorithmException e) {
             e.printStackTrace();
         }
 
-        char[] keyEntryPassword = "456def".toCharArray();
+        char[] keyEntryPassword = "keyPass".toCharArray();
         KeyStore.ProtectionParameter entryPassword = new KeyStore.PasswordProtection(keyEntryPassword);
-
         KeyStore.SecretKeyEntry secretKeyEntry = new KeyStore.SecretKeyEntry(secretKey);
-
-        keyStore.setEntry(ACTIVE_KEY_ALISA_PREFIX+ENCRYPTION_KEY_DELIMITER+keyGenerationTime.toEpochSecond(ZoneOffset.UTC), secretKeyEntry, entryPassword);
-
-        try (FileOutputStream keyStoreOutputStream = new FileOutputStream(KEY_STORE_PATH+"keystoreWithPrefixAlias.jceks")) {
+        keyStore.setEntry(ACTIVE_KEY_ALISA_PREFIX + ENCRYPTION_KEY_DELIMITER + keyGenerationTime.toEpochSecond(ZoneOffset.UTC), secretKeyEntry, entryPassword);
+        try (FileOutputStream keyStoreOutputStream = new FileOutputStream(KEY_STORE_PATH + "keystoreWithPrefixAlias.jceks")) {
             keyStore.store(keyStoreOutputStream, keyStorePassword);
         }
-
         return keyStore;
     }
 
@@ -120,36 +111,35 @@ public class KeyStoreService {
 
         KeyStore keyStore = KeyStore.getInstance("JCEKS");
 
-        char[] keyStorePassword = "123abc".toCharArray();
-        try(FileInputStream keyStoreInputStream = new FileInputStream(KEY_STORE_PATH+"keystoreWithPrefixAlias.jceks")) {
+        char[] keyStorePassword = "storePass".toCharArray();
+        try (FileInputStream keyStoreInputStream = new FileInputStream(KEY_STORE_PATH + "keystoreWithPrefixAlias.jceks")) {
             keyStore.load(keyStoreInputStream, keyStorePassword);
         } catch (CertificateException | NoSuchAlgorithmException e) {
             e.printStackTrace();
         }
 
-        char[] keyPassword = "456def".toCharArray();
+        char[] keyPassword = "keyPass".toCharArray();
         String backupAliasName = getBackupKeyAliasName(keyStore);
-        if(backupAliasName != null) {
+        if (backupAliasName != null) {
             keyStore.deleteEntry(backupAliasName);
         }
         String aliasName = getActiveKeyAliasName(keyStore);
         SecretKey backUpSecretKey = (SecretKey) keyStore.getKey(aliasName, keyPassword);
         String backUpSecretKeyTimestamp = aliasName.split(ENCRYPTION_KEY_DELIMITER)[1];
-        String backUpSecretKeyAliasName = BACKUP_KEY_ALISA_PREFIX+ENCRYPTION_KEY_DELIMITER+backUpSecretKeyTimestamp;
+        String backUpSecretKeyAliasName = BACKUP_KEY_ALISA_PREFIX + ENCRYPTION_KEY_DELIMITER + backUpSecretKeyTimestamp;
 
-        char[] keyEntryPassword = "456def".toCharArray();
+        char[] keyEntryPassword = "keyPass".toCharArray();
         KeyStore.ProtectionParameter entryPassword = new KeyStore.PasswordProtection(keyEntryPassword);
-
         KeyStore.SecretKeyEntry backUpSecretKeyEntry = new KeyStore.SecretKeyEntry(backUpSecretKey);
         keyStore.setEntry(backUpSecretKeyAliasName, backUpSecretKeyEntry, entryPassword);
 
         KeyStore.SecretKeyEntry activeSecretKeyEntry = new KeyStore.SecretKeyEntry(newSecretKey);
-        String activeSecretKeyAliasName = ACTIVE_KEY_ALISA_PREFIX+ENCRYPTION_KEY_DELIMITER+keyGenerationTime.toEpochSecond(ZoneOffset.UTC);
+        String activeSecretKeyAliasName = ACTIVE_KEY_ALISA_PREFIX + ENCRYPTION_KEY_DELIMITER + keyGenerationTime.toEpochSecond(ZoneOffset.UTC);
         keyStore.setEntry(activeSecretKeyAliasName, activeSecretKeyEntry, entryPassword);
 
         keyStore.deleteEntry(aliasName);
 
-        try (FileOutputStream keyStoreOutputStream = new FileOutputStream(KEY_STORE_PATH+"keystoreWithPrefixAlias.jceks")) {
+        try (FileOutputStream keyStoreOutputStream = new FileOutputStream(KEY_STORE_PATH + "keystoreWithPrefixAlias.jceks")) {
             keyStore.store(keyStoreOutputStream, keyStorePassword);
         }
 

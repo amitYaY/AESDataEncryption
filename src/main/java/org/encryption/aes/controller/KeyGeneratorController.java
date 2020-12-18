@@ -16,6 +16,7 @@ public class KeyGeneratorController {
     @Autowired
     private AESKeyGenerator aesKeyGenerator;
 
+    // Get Secret Key Created
     @RequestMapping(value = "/secretkey", method = RequestMethod.GET)
     public SecretKey getSecretKey() {
         return aesKeyGenerator.getAESKey();
